@@ -1,24 +1,33 @@
-import socket
+import json
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
-def start_discovery():
+agents = []
 
-    host="0.0.0.0"
-    port=9000
+class DiscoveryHandler(BaseHTTPRequestHandler):
 
-    s=socket.socket()
+    def do_GET(self):
+        if self.path == "/agents":
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(agents).encode())
 
-    s.bind((host,port))
+    def do_POST(self):
+        if self.path == "/register":
+            length = int(self.headers['Content-Length'])
+            data = self.rfile.read(length)
+            agent = json.loads(data)
 
-    s.listen(5)
+            agents.append(agent)
 
-    print("Discovery Server Running on port",port)
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"Agent registered")
 
-    while True:
+def run():
+    server = HTTPServer(("0.0.0.0", 8000), DiscoveryHandler)
+    print("AI Civilization Discovery Server Running on port 8000")
+    server.serve_forever()
 
-        conn,addr=s.accept()
-
-        print("Agent Connected:",addr)
-
-        conn.send(b"AI Civilization Discovery Node")
-
-        conn.close()
+if __name__ == "__main__":
+    run()
